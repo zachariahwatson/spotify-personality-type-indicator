@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+</head>
+<body>
+    <p>hello <%= displayName %>!</p>
+    <h2>your <%= time_range.replace('_', ' ') %> spotify personality type: </h2>
+    <h1 style="color: green"><%= userResults[0] %></h1>
+    <h2>you are: </h2>
+    <% userResults[1].forEach(type=>{ %>
+        <p><%= type %></p>
+    <% }) %>
+
+    <h2>what does my personality type mean?</h2>
+
+    <ul><% for(var feature in userResults[2]) { %>
+        <li><%= feature %> </li>
+        <ul><% for(var type in userResults[2][feature]) { %>
+            <li><%= type %>: <%= userResults[2][feature][type] %></li>
+        <% } %></ul>
+    <% } %></ul>
+
+</body>
+</html>
