@@ -114,7 +114,7 @@ app.post('/app/results/', async function(req, res){
         });
 
         var chartData = await getData();
-        console.log(chartData)
+        //console.log(chartData)
 
         res.render('results.ejs', {userResults: moods, displayName: nameData.body.display_name, chartData: chartData, time_range: req.body.time_range});
 
