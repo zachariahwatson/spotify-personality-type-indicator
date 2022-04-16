@@ -5,28 +5,36 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
-    <title>Results</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet"> 
+    <link rel="stylesheet" type="text/css" href="../../style.css" />
+    <title>Spotify Personality Type Indicator</title>
 </head>
 <body>
-    <p>hello <%= displayName %>!</p>
-    <h2>your <%= time_range.replace('_', ' ') %> spotify personality type: </h2>
-    <h1 style="color: green"><%= userResults[0] %></h1>
-    <h2>you are: </h2>
-    <% userResults[1].forEach(type=>{ %>
-        <p><%= type %></p>
-    <% }) %>
+    <div id="resultswrapper">
+        <div>
+            <!-- <h2>Your <%/* time_range.replace('_', ' ') */%> Spotify Personality Type: </h2> -->
+            <h2><%= displayName %>'s Spotify Personality Type: </h2>
+            <h1 style="color: #1ed760"><%= userResults[0] %></h1>
+            <h2>You are: </h2>
+            <% userResults[1].forEach(type=>{ %>
+                <p><%= type %></p>
+            <% }) %>
 
-    <h2>what does my personality type mean?</h2>
+            <h2>What does my personality type mean?</h2>
 
-    <ul><% for(var feature in userResults[2]) { %>
-        <li><%= feature %> </li>
-        <ul><% for(var type in userResults[2][feature]) { %>
-            <li><%= type %>: <%= userResults[2][feature][type] %></li>
-        <% } %></ul>
-    <% } %></ul>
+            <ul><% for(var feature in userResults[2]) { %>
+                <li><%= feature %> </li>
+                <ul><% for(var type in userResults[2][feature]) { %>
+                    <li><%= type %>: <%= userResults[2][feature][type] %></li>
+                <% } %></ul>
+            <% } %></ul>
 
-    <div id="wrapper" style="height: 500px; width: 500px;">
-        <canvas id="myChart" width="300" height="300"></canvas>
+            <div id="wrapper">
+                <canvas id="myChart" height="500"></canvas>
+            </div>
+        </div>
     </div>
     <script>
         
@@ -40,22 +48,37 @@
                 label: '# of Users',
                 data: chartData[2],
                 backgroundColor: [
-                    '#007f5f'
+                    '#1ed760'
                 ]
             }]
         },
         options: {
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#fff',
+                        maxRotation: 90
+                    },
+                    grid: {
+                        color: 'rgba(255,255,255,.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#fff',
+                        maxRotation: 90
+                    },
+                    grid: {
+                        color: 'rgba(255,255,255,.1)'
+                    }
                 }
             },
             responsive: true,
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            color: '#fff'
         }
     });
     </script>
-
-
 </body>
 </html>

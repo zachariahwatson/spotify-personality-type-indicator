@@ -9,8 +9,11 @@ var path = require('path');
 var app = express();
 var PORT = 8888;
 
+app.use(express.static(__dirname + '/public'));
+
 //spotify
 var SpotifyWebApi = require('spotify-web-api-node');
+const { count } = require('console');
 
 var scopes = ['user-top-read']
 //var state = generateString(16);
@@ -34,7 +37,7 @@ app.get('/callback', function(req, res){
     // Retrieve an access token and a refresh token
     spotifyApi.authorizationCodeGrant(req.query.code).then(
         function(data) {
-        res.redirect('/app/?access_token=' + data.body['access_token'] + '&refresh_token=' + data.body['refresh_token']);
+        res.redirect('/results/?access_token=' + data.body['access_token'] + '&refresh_token=' + data.body['refresh_token']);
         },
         function(err) {
         res.send('Something went wrong! ' + err);
@@ -42,51 +45,21 @@ app.get('/callback', function(req, res){
     );
 });
 
-app.get('/app', async function(req, res){
+app.get('/results', async function(req, res){
     try {
         var userSpotifyApi = new SpotifyWebApi();
 
         userSpotifyApi.setAccessToken(req.query.access_token);
         userSpotifyApi.setRefreshToken(req.query.refresh_token);
-        //res.sendFile(path.join(__dirname, '/public/app.html'));
-
-        //get user
-        const nameData = await userSpotifyApi.getMe()
-
-        res.render('app.ejs', {displayName: nameData.body.display_name, access_token: req.query.access_token, refresh_token: req.query.refresh_token});
-
-    } catch(err) {
-        const nameData = await userSpotifyApi.getMe()
-        console.log(nameData.body.display_name + ' got an error: ' + err)
-        res.send('An error has occured: ' + err)
-    }
-    
-});
-
-// for parsing application/json
-app.use(express.json()); 
-
-// for parsing application/x-www-form-urlencoded
-app.use(express.urlencoded({ extended: true })); 
-
-// for parsing multipart/form-data
-app.use(upload.array()); 
-
-app.post('/app/results/', async function(req, res){
-    try {
-        var userSpotifyApi = new SpotifyWebApi();
-
-        userSpotifyApi.setAccessToken(req.body.access_token);
-        userSpotifyApi.setRefreshToken(req.body.refresh_token);
 
         //get user
         const nameData = await userSpotifyApi.getMe()
 
         //get top tracks
-        const data = await userSpotifyApi.getMyTopTracks({limit: 21, time_range: req.body.time_range});
+        const data = await userSpotifyApi.getMyTopTracks({limit: 9, time_range: 'long_term'});
         var ids = [];
         for (let item of data.body.items) {
-            //console.log(item.name + " " + item.id)
+            //console.log(item.name)
             ids.push(item.id);
         }
         const features = await userSpotifyApi.getAudioFeaturesForTracks(ids);
@@ -107,7 +80,7 @@ app.post('/app/results/', async function(req, res){
         console.log(nameData.body.display_name + ' viewed their results')
 
         //log result
-        fs.appendFile("types.csv", moods[0] + "," + nameData.body.id + ',' + req.body.time_range + "\r\n", (err) => {
+        fs.appendFile("types.csv", moods[0] + "," + nameData.body.id/*+ ',' + req.body.time_range*/ + "\r\n", (err) => {
             if (err) {
                 console.log(err);
             }
@@ -116,14 +89,24 @@ app.post('/app/results/', async function(req, res){
         var chartData = await getData();
         //console.log(chartData)
 
-        res.render('results.ejs', {userResults: moods, displayName: nameData.body.display_name, chartData: chartData, time_range: req.body.time_range});
+        res.render('results.ejs', {userResults: moods, displayName: nameData.body.display_name, chartData: chartData/*, time_range: req.body.time_range*/});
 
     } catch(err) {
         const nameData = await userSpotifyApi.getMe()
         console.log(nameData.body.display_name + ' got an error: ' + err)
         res.send('An error has occured: ' + err)
     }
+    
 });
+
+// for parsing application/json
+app.use(express.json()); 
+
+// for parsing application/x-www-form-urlencoded
+app.use(express.urlencoded({ extended: true })); 
+
+// for parsing multipart/form-data
+app.use(upload.array()); 
   
 app.listen(PORT, function(err){
     if (err) console.log(err);
@@ -143,19 +126,19 @@ app.listen(PORT, function(err){
 
 function calcMoods(features, mostStreamedFeatures) {
     var types = {
-        'instrumentalness (are there spoken words in your songs or no)': {
+        'instrumentalness (are there spoken words in your top 9 songs or no)': {
             instrumental: 0,
             articulate: 0
         },
-        'valence (are your songs happy or no)': {
-            bright: 0,
+        'valence (are your top 9 songs happy or no)': {
+            joyful: 0,
             melancholy: 0
         },
-        'energy (are your songs energetic or no)': {
+        'energy (are your top 9 songs energetic or no)': {
             lively: 0,
             chill: 0
         },
-        'danceability (do your songs have consistent enough beat to dance to or no)': {
+        'danceability (do your top 9 songs have consistent enough beat to dance to or no)': {
             rhythmic: 0,
             free: 0
         }
@@ -196,36 +179,30 @@ function calcMoods(features, mostStreamedFeatures) {
         totalDanceability.push(song.danceability);
     })
 
-
-
-
-
-
-
     var thresholds = {
-        'instrumentalness (are there spoken words in your songs or no)': {
+        'instrumentalness (are there spoken words in your top 9 songs or no)': {
             instrumental: {low: mostStreamedInstrumentalness-.000001, high: 1},
             articulate: {low: -.000001, high: mostStreamedInstrumentalness-.000001}
         },
-        'valence (are your songs happy or no)': {
-            bright: {low: mostStreamedValence-.000001, high: 1},
+        'valence (are your top 9 songs happy or no)': {
+            joyful: {low: mostStreamedValence-.000001, high: 1},
             melancholy: {low: -.000001, high: mostStreamedValence-.000001}
         },
-        'energy (are your songs energetic or no)': {
+        'energy (are your top 9 songs energetic or no)': {
             lively: {low: mostStreamedEnergy-.000001, high: 1},
             chill: {low: -.000001, high: mostStreamedEnergy-.000001}
         },
-        'danceability (do your songs have consistent enough beat to dance to or no)': {
+        'danceability (do your top 9 songs have consistent enough beat to dance to or no)': {
             rhythmic: {low: mostStreamedDance-.000001, high: 1},
             free: {low: -.000001, high: mostStreamedDance-.000001}
         }
     };
 
     var totals = {
-        'instrumentalness (are there spoken words in your songs or no)': totalInstrumentalness,
-        'valence (are your songs happy or no)': totalValence,
-        'energy (are your songs energetic or no)': totalEnergy,
-        'danceability (do your songs have consistent enough beat to dance to or no)': totalDanceability
+        'instrumentalness (are there spoken words in your top 9 songs or no)': totalInstrumentalness,
+        'valence (are your top 9 songs happy or no)': totalValence,
+        'energy (are your top 9 songs energetic or no)': totalEnergy,
+        'danceability (do your top 9 songs have consistent enough beat to dance to or no)': totalDanceability
     }
 
     //calc points
@@ -238,20 +215,6 @@ function calcMoods(features, mostStreamedFeatures) {
             }
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     var type = ''
     var typefull = []
@@ -285,8 +248,8 @@ function calcMoods(features, mostStreamedFeatures) {
         }
     })
     if (hic > loc) {
-        type += 'B'
-        typefull.push('bright')
+        type += 'J'
+        typefull.push('joyful')
     } else {
         type += 'M'
         typefull.push('melancholy')
@@ -352,8 +315,8 @@ function getData() {
         .pipe(csv())
         .on('data', (data) => results.push(data))
         .on('end', () => {
-            results = [...new Map(results.map(v => [JSON.stringify([v.type,v.id,v.timerange]), v])).values()]
-            var types = ['ABCF','ABCR','ABLF','ABLR','AMCF','AMCR','AMLF','AMLR','IBCF','IBCR','IBLF','IBLR','IMCF','IMCR','IMLF','IMLR']
+            results = [...new Map(results.map(v => [JSON.stringify([v.type,v.id]), v])).values()]
+            var types = ['AJCF','AJCR','AJLF','AJLR','AMCF','AMCR','AMLF','AMLR','IJCF','IJCR','IJLF','IJLR','IMCF','IMCR','IMLF','IMLR']
             var typeCounts = []
 
             types.forEach(type=>{
@@ -366,7 +329,17 @@ function getData() {
                 typeCounts.push(typecount)
             })
 
-            //console.log([cleanedData, types, typeCounts])
+            for(var i=0; i<typeCounts.length;i++ ) { 
+                if(typeCounts[i] == 0) {
+                    typeCounts.splice(i,1)
+                    types.splice(i,1)
+                    i--
+                }
+            } 
+
+            types = types.filter(function(val){
+                return val !== ''
+            });
 
             resolve([results, types, typeCounts])
             // [
