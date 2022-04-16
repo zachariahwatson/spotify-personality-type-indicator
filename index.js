@@ -13,7 +13,6 @@ app.use(express.static(__dirname + '/public'));
 
 //spotify
 var SpotifyWebApi = require('spotify-web-api-node');
-const { count } = require('console');
 
 var scopes = ['user-top-read']
 //var state = generateString(16);
@@ -59,12 +58,15 @@ app.get('/results', async function(req, res){
         const data = await userSpotifyApi.getMyTopTracks({limit: 15, time_range: 'medium_term'});
         var ids = [];
         var artistids = [];
+        var names = [];
         for (let item of data.body.items) {
             //console.log(item.name)
             //console.log(item.artists[0].id)
             ids.push(item.id);
             artistids.push(item.artists[0].id)
+            names.push(item.name);
         }
+        //res.send(names)
         const features = await userSpotifyApi.getAudioFeaturesForTracks(ids);
 
 
@@ -73,7 +75,11 @@ app.get('/results', async function(req, res){
         //console.log(artists.body.artists[0].genres)
         var topgenres = []
         artists.body.artists.forEach(artist=>{
-            topgenres.push(artist.genres[0])
+            //console.log(artist)
+            if (artist.genres.length > 0) {
+                topgenres.push(artist.genres[0])
+            }
+            
         })
         //console.log(topgenres)
 
@@ -87,11 +93,13 @@ app.get('/results', async function(req, res){
         var favoriteGenre = ''
         var highestNum = 0
         for (genre in occurrences) {
+            //console.log(genre)
             if (occurrences[genre] > highestNum) {
                 highestNum = occurrences[genre]
                 favoriteGenre = genre
             }
         }
+        //console.log(highestNum)
         if (highestNum == 1) {
             favoriteGenre = topgenres[0]
         }
@@ -354,22 +362,22 @@ function getData() {
             var types = ['AJCF','AJCR','AJLF','AJLR','AMCF','AMCR','AMLF','AMLR','IJCF','IJCR','IJLF','IJLR','IMCF','IMCR','IMLF','IMLR']
             var typeCounts = []
             var typesGenres = [
-                {'AJCF': []},
-                {'AJCR': []},
-                {'AJLF': []},
-                {'AJLR': []},
-                {'AMCF': []},
-                {'AMCR': []},
-                {'AMLF': []},
-                {'AMLR': []},
-                {'IJCF': []},
-                {'IJCR': []},
-                {'IJLF': []},
-                {'IJLR': []},
-                {'IMCF': []},
-                {'IMCR': []},
-                {'IMLF': []},
-                {'IMLR': []}
+                {name: 'AJCF', data: []},
+                {name: 'AJCR', data: []},
+                {name: 'AJLF', data: []},
+                {name: 'AJLR', data: []},
+                {name: 'AMCF', data: []},
+                {name: 'AMCR', data: []},
+                {name: 'AMLF', data: []},
+                {name: 'AMLR', data: []},
+                {name: 'IJCF', data: []},
+                {name: 'IJCR', data: []},
+                {name: 'IJLF', data: []},
+                {name: 'IJLR', data: []},
+                {name: 'IMCF', data: []},
+                {name: 'IMCR', data: []},
+                {name: 'IMLF', data: []},
+                {name: 'IMLR', data: []}
             ]
 
             types.forEach((type,i)=>{
@@ -378,13 +386,16 @@ function getData() {
                     if (entry.type == type) {
                         typecount++
                         var dupe = false
-                        typesGenres[i][type].forEach(genre=>{
+                        typesGenres[i].data.forEach(genre=>{
                             if (genre == entry.genre) {
                                 dupe = true
                             }
                         })
                         if (!dupe) {
-                            typesGenres[i][type].push(entry.genre)
+                            //typesGenres[i].data.push(entry.genre)
+                            typesGenres[i].data.push(
+                                {name: entry.genre, value: 1}
+                            )
                         }
                         
                     }
@@ -396,17 +407,18 @@ function getData() {
             //removing non values
             types.forEach((type,i)=>{
                 //console.log(typesGenres[i][type].length)
-                if (typesGenres[i][type].length > 0) {
+                if (typesGenres[i].data.length > 0 && typesGenres[i].data.length < 6) {
                     //typesGenres.splice(i,1)
                     //i--
                     //console.log('blah')
                     typesGenresClean.push({
-                        [type]: typesGenres[i][type]
+                        name: type,
+                        data: typesGenres[i].data
                     })
                 }
             })
 
-            //console.log(typesGenresClean)
+            //console.log(typesGenresClean[0].data)
 
 
             for(var i=0; i<typeCounts.length;i++ ) { 
@@ -422,10 +434,6 @@ function getData() {
             });
 
             resolve([results, types, typeCounts, typesGenresClean])
-            // [
-            //   { NAME: 'Daffy Duck', AGE: '24' },
-            //   { NAME: 'Bugs Bunny', AGE: '22' }
-            // ]
         });
     });
 
