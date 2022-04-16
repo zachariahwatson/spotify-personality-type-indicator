@@ -20,7 +20,23 @@
             <h2>You are: </h2>
             <% userResults[1].forEach(type=>{ %>
                 <p><%= type %></p>
-            <% }) %>
+            <% }) %><br>
+
+            <h2><%= displayName %>'s top genre (from their top 15 songs): </h2>
+            <h1 style="color: #1ed760"><%= favoriteGenre %></h1><br>
+
+            <h2>Count of each personality type:</h2>
+            <div id="wrapper">
+                <canvas id="myChart" height="500"></canvas>
+            </div><br>
+
+            <h2>Top genres of personality types:</h2>
+            <ul><% chartData[1].forEach((type,i)=> { %>
+                <li style="color: #1ed760"><h2><%= type %></h2> </li>
+                <ul><% chartData[3][i][type].forEach(genre=> { %>
+                    <li><h3><%= genre %></h3></li>
+                <% }) %></ul>
+            <% }) %></ul><br>
 
             <h2>What does my personality type mean?</h2>
 
@@ -31,9 +47,6 @@
                 <% } %></ul>
             <% } %></ul>
 
-            <div id="wrapper">
-                <canvas id="myChart" height="500"></canvas>
-            </div>
         </div>
     </div>
     <script>

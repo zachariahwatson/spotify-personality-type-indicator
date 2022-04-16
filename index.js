@@ -56,7 +56,7 @@ app.get('/results', async function(req, res){
         const nameData = await userSpotifyApi.getMe()
 
         //get top tracks and their artists
-        const data = await userSpotifyApi.getMyTopTracks({limit: 15, time_range: 'long_term'});
+        const data = await userSpotifyApi.getMyTopTracks({limit: 15, time_range: 'medium_term'});
         var ids = [];
         var artistids = [];
         for (let item of data.body.items) {
@@ -82,7 +82,7 @@ app.get('/results', async function(req, res){
             return acc[curr] ? ++acc[curr] : acc[curr] = 1, acc
           }, {});
 
-        //console.log(occurrences)
+        //console.log(nameData.body.display_name + ": " + topgenres)
 
         var favoriteGenre = ''
         var highestNum = 0
@@ -124,7 +124,7 @@ app.get('/results', async function(req, res){
         var chartData = await getData();
         //console.log(chartData)
 
-        res.render('results.ejs', {userResults: moods, displayName: nameData.body.display_name, chartData: chartData/*, time_range: req.body.time_range*/});
+        res.render('results.ejs', {userResults: moods, displayName: nameData.body.display_name, chartData: chartData, favoriteGenre: favoriteGenre/*, time_range: req.body.time_range*/});
 
     } catch(err) {
         const nameData = await userSpotifyApi.getMe()
@@ -353,16 +353,61 @@ function getData() {
             results = [...new Map(results.map(v => [JSON.stringify([v.type,v.id]), v])).values()]
             var types = ['AJCF','AJCR','AJLF','AJLR','AMCF','AMCR','AMLF','AMLR','IJCF','IJCR','IJLF','IJLR','IMCF','IMCR','IMLF','IMLR']
             var typeCounts = []
+            var typesGenres = [
+                {'AJCF': []},
+                {'AJCR': []},
+                {'AJLF': []},
+                {'AJLR': []},
+                {'AMCF': []},
+                {'AMCR': []},
+                {'AMLF': []},
+                {'AMLR': []},
+                {'IJCF': []},
+                {'IJCR': []},
+                {'IJLF': []},
+                {'IJLR': []},
+                {'IMCF': []},
+                {'IMCR': []},
+                {'IMLF': []},
+                {'IMLR': []}
+            ]
 
-            types.forEach(type=>{
+            types.forEach((type,i)=>{
                 var typecount = 0
                 results.forEach(entry=>{
                     if (entry.type == type) {
                         typecount++
+                        var dupe = false
+                        typesGenres[i][type].forEach(genre=>{
+                            if (genre == entry.genre) {
+                                dupe = true
+                            }
+                        })
+                        if (!dupe) {
+                            typesGenres[i][type].push(entry.genre)
+                        }
+                        
                     }
                 })
                 typeCounts.push(typecount)
             })
+
+            var typesGenresClean = []
+            //removing non values
+            types.forEach((type,i)=>{
+                //console.log(typesGenres[i][type].length)
+                if (typesGenres[i][type].length > 0) {
+                    //typesGenres.splice(i,1)
+                    //i--
+                    //console.log('blah')
+                    typesGenresClean.push({
+                        [type]: typesGenres[i][type]
+                    })
+                }
+            })
+
+            //console.log(typesGenresClean)
+
 
             for(var i=0; i<typeCounts.length;i++ ) { 
                 if(typeCounts[i] == 0) {
@@ -376,7 +421,7 @@ function getData() {
                 return val !== ''
             });
 
-            resolve([results, types, typeCounts])
+            resolve([results, types, typeCounts, typesGenresClean])
             // [
             //   { NAME: 'Daffy Duck', AGE: '24' },
             //   { NAME: 'Bugs Bunny', AGE: '22' }
