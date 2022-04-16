@@ -55,14 +55,49 @@ app.get('/results', async function(req, res){
         //get user
         const nameData = await userSpotifyApi.getMe()
 
-        //get top tracks
-        const data = await userSpotifyApi.getMyTopTracks({limit: 9, time_range: 'long_term'});
+        //get top tracks and their artists
+        const data = await userSpotifyApi.getMyTopTracks({limit: 15, time_range: 'long_term'});
         var ids = [];
+        var artistids = [];
         for (let item of data.body.items) {
             //console.log(item.name)
+            //console.log(item.artists[0].id)
             ids.push(item.id);
+            artistids.push(item.artists[0].id)
         }
         const features = await userSpotifyApi.getAudioFeaturesForTracks(ids);
+
+
+        //set most liked genre based off of top 15 songs
+        const artists = await userSpotifyApi.getArtists(artistids)
+        //console.log(artists.body.artists[0].genres)
+        var topgenres = []
+        artists.body.artists.forEach(artist=>{
+            topgenres.push(artist.genres[0])
+        })
+        //console.log(topgenres)
+
+        //count top genres by occurrences
+        const occurrences = topgenres.reduce(function (acc, curr) {
+            return acc[curr] ? ++acc[curr] : acc[curr] = 1, acc
+          }, {});
+
+        //console.log(occurrences)
+
+        var favoriteGenre = ''
+        var highestNum = 0
+        for (genre in occurrences) {
+            if (occurrences[genre] > highestNum) {
+                highestNum = occurrences[genre]
+                favoriteGenre = genre
+            }
+        }
+        if (highestNum == 1) {
+            favoriteGenre = topgenres[0]
+        }
+
+        //console.log(favoriteGenre)
+
 
         //get top 100 most streamed songs to weigh thresholds
         const mostStreamedTracks = await userSpotifyApi.getPlaylistTracks('5ABHKGoOzxkaa28ttQV9sE')
@@ -80,7 +115,7 @@ app.get('/results', async function(req, res){
         console.log(nameData.body.display_name + ' viewed their results')
 
         //log result
-        fs.appendFile("types.csv", moods[0] + "," + nameData.body.id/*+ ',' + req.body.time_range*/ + "\r\n", (err) => {
+        fs.appendFile("types.csv", moods[0] + "," + nameData.body.id + ',' + favoriteGenre/*+ ',' + req.body.time_range*/ + "\r\n", (err) => {
             if (err) {
                 console.log(err);
             }
@@ -126,19 +161,19 @@ app.listen(PORT, function(err){
 
 function calcMoods(features, mostStreamedFeatures) {
     var types = {
-        'instrumentalness (are there spoken words in your top 9 songs or no)': {
+        'instrumentalness (are there spoken words in your top 15 songs or no)': {
             instrumental: 0,
             articulate: 0
         },
-        'valence (are your top 9 songs happy or no)': {
+        'valence (are your top 15 songs happy or no)': {
             joyful: 0,
             melancholy: 0
         },
-        'energy (are your top 9 songs energetic or no)': {
+        'energy (are your top 15 songs energetic or no)': {
             lively: 0,
             chill: 0
         },
-        'danceability (do your top 9 songs have consistent enough beat to dance to or no)': {
+        'danceability (do your top 15 songs have consistent enough beat to dance to or no)': {
             rhythmic: 0,
             free: 0
         }
@@ -180,29 +215,29 @@ function calcMoods(features, mostStreamedFeatures) {
     })
 
     var thresholds = {
-        'instrumentalness (are there spoken words in your top 9 songs or no)': {
+        'instrumentalness (are there spoken words in your top 15 songs or no)': {
             instrumental: {low: mostStreamedInstrumentalness-.000001, high: 1},
             articulate: {low: -.000001, high: mostStreamedInstrumentalness-.000001}
         },
-        'valence (are your top 9 songs happy or no)': {
+        'valence (are your top 15 songs happy or no)': {
             joyful: {low: mostStreamedValence-.000001, high: 1},
             melancholy: {low: -.000001, high: mostStreamedValence-.000001}
         },
-        'energy (are your top 9 songs energetic or no)': {
+        'energy (are your top 15 songs energetic or no)': {
             lively: {low: mostStreamedEnergy-.000001, high: 1},
             chill: {low: -.000001, high: mostStreamedEnergy-.000001}
         },
-        'danceability (do your top 9 songs have consistent enough beat to dance to or no)': {
+        'danceability (do your top 15 songs have consistent enough beat to dance to or no)': {
             rhythmic: {low: mostStreamedDance-.000001, high: 1},
             free: {low: -.000001, high: mostStreamedDance-.000001}
         }
     };
 
     var totals = {
-        'instrumentalness (are there spoken words in your top 9 songs or no)': totalInstrumentalness,
-        'valence (are your top 9 songs happy or no)': totalValence,
-        'energy (are your top 9 songs energetic or no)': totalEnergy,
-        'danceability (do your top 9 songs have consistent enough beat to dance to or no)': totalDanceability
+        'instrumentalness (are there spoken words in your top 15 songs or no)': totalInstrumentalness,
+        'valence (are your top 15 songs happy or no)': totalValence,
+        'energy (are your top 15 songs energetic or no)': totalEnergy,
+        'danceability (do your top 15 songs have consistent enough beat to dance to or no)': totalDanceability
     }
 
     //calc points
